@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Sensor Dashboard</title>
+</head>
+<body>
+
+<h1>Dashboard Sensore</h1>
+<select>GG</select>
+<h3>Dati grezzi (MQTT)</h3>
+<pre id="raw">---</pre>
+
+<h3>Dati formattati</h3>
+<p id="formatted">---</p>
+
+<script>
+const ws = new WebSocket("ws://localhost:8888/ws");
+
+const raw = document.getElementById("raw");
+const formatted = document.getElementById("formatted");
+
+ws.onopen = () => {
+    console.log("WebSocket aperto");
+};
+
+ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+
+    // gestisce solo messaggi di tipo sensore
+    if (msg.type !== "sensor") return;
+
+    const data = msg.data;
+
+    // filtra solo il sensore temperatura
+    if (data.sensor !== "temperature") return;
+
+    const time = new Date().toLocaleTimeString();
+
+    // dati grezzi
+    raw.textContent = JSON.stringify(data, null, 2);
+
+    // dati formattati
+    formatted.textContent =
+        `Temperatura: ${data.value} °${data.unit} (ore ${time})`;
+};
+
+ws.onclose = () => {
+    console.log("WebSocket chiuso");
+};
+</script>
+
+</body>
+</html>

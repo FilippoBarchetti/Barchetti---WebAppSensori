@@ -1,0 +1,60 @@
+import time
+import random
+import json
+from tkinter.font import names
+
+import paho.mqtt.client as mqtt
+import threading
+
+broker = "test.mosquitto.org"
+topic_temperature = "sensor/temperature"
+topic_humidity = "sensor/humidity"
+topic_pressure = "sensor/pressure"
+
+client = mqtt.Client()
+client.connect(broker, 1883)
+
+print("Sensore simulato avviato")
+
+class Publisher(threading.Thread):
+    def __init__(self, stop_event, sensor, unit):
+        super().__init__(name=f"{sensor}_thread")
+        self.stop_event = stop_event
+        self.topic = f"sensor/{sensor}"
+        self.sensor = sensor
+        self.unit = unit
+
+    def run(self):
+        while not self.stop_event:
+            value = round(random.uniform(18, 40), 2)
+
+            payload = {
+                "sensor": self.sensor,
+                "value": value,
+                "unit": self.unit
+            }
+
+            client.publish(self.topic, json.dumps(payload))
+            print("Pubblicato:", payload)
+
+            time.sleep(1)
+
+if __name__ == "__main__":
+    stop_event = threading.Event()
+
+    # Setup threads
+    temperature_thread = Publisher(stop_event, "temperature", "°C")
+    humidity_thread = Publisher(stop_event, "humidity", "%")
+    pressure_thread = Publisher(stop_event, "pressure", "atm")
+
+    # Start threads
+    temperature_thread.start()
+    humidity_thread.start()
+    pressure_thread.start()
+
+    # Loop e stop
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        stop_event.set()
