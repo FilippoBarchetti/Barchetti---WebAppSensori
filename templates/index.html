@@ -23,7 +23,10 @@
 <h3>Chart.js</h3>
 <p id="chart_js">---</p>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js">
+<canvas id="chart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
     const ws = new WebSocket("ws://localhost:8888/ws");
 
     const raw = document.getElementById("raw");
@@ -32,9 +35,36 @@
     const dom_selected_sensor = document.getElementById("sensor_selection");
     let selected_sensor = "temperature";
 
+    const ctx = document.getElementById("chart");
+    let chart = null;
+
     function OnChange(){
         selected_sensor = dom_selected_sensor.value;
+
+        // prima di creare un nuovo chart distruggo quello vecchio, se c'è
+        if (chart) {
+            chart.destroy();
+            chart = null;
+        }
+
+        // crea nuovo chart ogni volta che seleziono un sensore
+        chart = new Chart(ctx, {
+            type: "line",        // tipo di grafico (line = grafico a linee)
+            data: {
+                labels: [],      // asse orizzontale (tempo, indice, ecc.)
+                datasets: [{
+                    label: selected_sensor, // nome della linea nel grafico
+                    data: [], // valori numerici del sensore
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                animation: false
+            }
+        });
+
     };
+    OnChange();
 
     ws.onopen = () => {
         console.log("WebSocket aperto");
@@ -51,20 +81,23 @@
         // filtra solo il sensore selezionato
         if (data.sensor !== selected_sensor) return;
 
-        const time = new Date().toLocaleTimeString();
-
         // dati grezzi
         raw.textContent = JSON.stringify(data, null, 2);
 
         // dati formattati
         formatted.textContent =
-            `${selected_sensor}: ${data.value} ${data.unit} (ore ${time})`;
-    };
+            `${selected_sensor}: ${data.value} ${data.unit} (ore ${data.time_stamp})`;
 
+        // aggiorno il chart
+        chart.data.labels.push(data.time_stamp);
+        chart.data.datasets[0].data.push(data.value);
+        chart.update();
+    };
 
     ws.onclose = () => {
         console.log("WebSocket chiuso");
     };
+
 </script>
 </body>
 </html>
