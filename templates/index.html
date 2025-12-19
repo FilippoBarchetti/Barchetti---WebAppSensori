@@ -7,48 +7,64 @@
 <body>
 
 <h1>Dashboard Sensore</h1>
-<select>GG</select>
+
+<select id="sensor_selection" onchange="OnChange()">
+    <option value="temperature">temperature</option>
+    <option value="humidity">humidity</option>
+    <option value="pressure">pressure</option>
+</select>
+
 <h3>Dati grezzi (MQTT)</h3>
 <pre id="raw">---</pre>
 
 <h3>Dati formattati</h3>
 <p id="formatted">---</p>
 
-<script>
-const ws = new WebSocket("ws://localhost:8888/ws");
+<h3>Chart.js</h3>
+<p id="chart_js">---</p>
 
-const raw = document.getElementById("raw");
-const formatted = document.getElementById("formatted");
+<script src="https://cdn.jsdelivr.net/npm/chart.js">
+    const ws = new WebSocket("ws://localhost:8888/ws");
 
-ws.onopen = () => {
-    console.log("WebSocket aperto");
-};
+    const raw = document.getElementById("raw");
+    const formatted = document.getElementById("formatted");
 
-ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
+    const dom_selected_sensor = document.getElementById("sensor_selection");
+    let selected_sensor = "temperature";
 
-    // gestisce solo messaggi di tipo sensore
-    if (msg.type !== "sensor") return;
+    function OnChange(){
+        selected_sensor = dom_selected_sensor.value;
+    };
 
-    const data = msg.data;
+    ws.onopen = () => {
+        console.log("WebSocket aperto");
+    };
 
-    // filtra solo il sensore temperatura
-    if (data.sensor !== "temperature") return;
+    ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
 
-    const time = new Date().toLocaleTimeString();
+        // gestisce solo messaggi di tipo sensore
+        if (msg.type !== "sensor") return;
 
-    // dati grezzi
-    raw.textContent = JSON.stringify(data, null, 2);
+        const data = msg.data;
 
-    // dati formattati
-    formatted.textContent =
-        `Temperatura: ${data.value} °${data.unit} (ore ${time})`;
-};
+        // filtra solo il sensore selezionato
+        if (data.sensor !== selected_sensor) return;
 
-ws.onclose = () => {
-    console.log("WebSocket chiuso");
-};
+        const time = new Date().toLocaleTimeString();
+
+        // dati grezzi
+        raw.textContent = JSON.stringify(data, null, 2);
+
+        // dati formattati
+        formatted.textContent =
+            `${selected_sensor}: ${data.value} ${data.unit} (ore ${time})`;
+    };
+
+
+    ws.onclose = () => {
+        console.log("WebSocket chiuso");
+    };
 </script>
-
 </body>
 </html>

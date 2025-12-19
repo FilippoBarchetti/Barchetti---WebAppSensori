@@ -1,7 +1,15 @@
+import sys
+import asyncio
+
+# Ho dovuto specificare questa condizione perchè
+# altrimenti, usando Windows, vi erano problemi
+if sys.platform.startswith("win"):
+    from asyncio import WindowsSelectorEventLoopPolicy
+    asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+
 import asyncio
 import json
 import logging
-
 import tornado.web
 import tornado.websocket
 import aiomqtt
@@ -36,8 +44,16 @@ async def mqtt_listener():
     logging.info("Connessione al broker MQTT...")
 
     async with aiomqtt.Client(broker) as client:
-        await client.subscribe(topic_temperature)
-        logging.info(f"Iscritto al topic: {topic_temperature}")
+        # Ho dovuto usare una lista di tuple (topic, QoS)
+        # QoS sta per quality of service e con QoS = 0
+        # non ci sono conferme della ricezione del messaggio
+        # ma la comunicazione è più veloce
+        await client.subscribe([
+            (topic_temperature, 0),
+            (topic_humidity, 0),
+            (topic_pressure, 0)
+        ])
+        logging.info(f"Iscritto ai topic: {topic_temperature}, {topic_humidity}, {topic_pressure}")
 
         async for message in client.messages:
             payload = message.payload.decode()

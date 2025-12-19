@@ -2,9 +2,10 @@ import time
 import random
 import json
 from tkinter.font import names
-
+import datetime
 import paho.mqtt.client as mqtt
 import threading
+
 
 broker = "test.mosquitto.org"
 topic_temperature = "sensor/temperature"
@@ -13,8 +14,9 @@ topic_pressure = "sensor/pressure"
 
 client = mqtt.Client()
 client.connect(broker, 1883)
+client.loop_start()
 
-print("Sensore simulato avviato")
+print("Sensori simulati avviati")
 
 class Publisher(threading.Thread):
     def __init__(self, stop_event, sensor, unit):
@@ -25,13 +27,14 @@ class Publisher(threading.Thread):
         self.unit = unit
 
     def run(self):
-        while not self.stop_event:
+        while not self.stop_event.is_set():
             value = round(random.uniform(18, 40), 2)
 
             payload = {
                 "sensor": self.sensor,
                 "value": value,
-                "unit": self.unit
+                "unit": self.unit,
+                "time_stamp": datetime.datetime.now().strftime("%H:%M:%S")
             }
 
             client.publish(self.topic, json.dumps(payload))
