@@ -91,6 +91,10 @@
         // aggiorno il chart
         chart.data.labels.push(data.time_stamp);
         chart.data.datasets[0].data.push(data.value);
+        if (chart.data.labels.length > 30) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+        }
         chart.update();
     };
 
